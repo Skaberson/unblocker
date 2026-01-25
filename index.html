@@ -123,6 +123,20 @@ document.body.innerHTML = `<iframe style="height:100%; width: 100%; border: none
 </div>
 </div>
 
+<div class="modal" id="cloak-modal" aria-hidden="true">
+<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cloak-title">
+<div class="modal-header">
+<div class="modal-eyebrow">Privacy cloak</div>
+<h3 id="cloak-title">Open in about:blank?</h3>
+</div>
+<p class="modal-desc">Launch the U4C Launcher inside an about:blank tab to reduce visibility in history and tabs.</p>
+<div class="modal-actions">
+<button class="ghost" id="cloak-dismiss" type="button">Not now</button>
+<button class="run" id="cloak-open" type="button">Open in about:blank</button>
+</div>
+</div>
+</div>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
@@ -572,6 +586,9 @@ const modeDesc = document.getElementById("mode-desc")
 const modeSkip = document.getElementById("mode-skip")
 const modeBack = document.getElementById("mode-back")
 const modeGo = document.getElementById("mode-go")
+const cloakModal = document.getElementById("cloak-modal")
+const cloakDismiss = document.getElementById("cloak-dismiss")
+const cloakOpen = document.getElementById("cloak-open")
 let mouseX = window.innerWidth / 2
 let mouseY = window.innerHeight / 2
 let scrollOffset = 0
@@ -579,6 +596,19 @@ let dbPromise = null
 let sessions = []
 let activeSessionId = null
 let pendingLaunch = null
+
+async function openSelfInAboutBlank() {
+try {
+const response = await fetch(window.location.href, { cache: "no-store" })
+const html = await response.text()
+const page = window.open("about:blank")
+if (!page) return
+page.document.open()
+page.document.write(html)
+page.document.close()
+} catch {
+}
+}
 
 function normalizeUrl(value) {
 const trimmed = value.trim()
@@ -950,6 +980,28 @@ await setModePreference(entry.type, { skip: true })
 closeModeModal()
 onConfirm()
 })
+
+function openCloakModal() {
+if (window.location.href === "about:blank") return
+cloakModal.classList.add("is-open")
+cloakModal.setAttribute("aria-hidden", "false")
+}
+
+function closeCloakModal() {
+cloakModal.classList.remove("is-open")
+cloakModal.setAttribute("aria-hidden", "true")
+}
+
+cloakDismiss.addEventListener("click", () => {
+closeCloakModal()
+})
+
+cloakOpen.addEventListener("click", () => {
+closeCloakModal()
+openSelfInAboutBlank()
+})
+
+openCloakModal()
 </script>
 
 </body>
