@@ -597,15 +597,12 @@ let sessions = []
 let activeSessionId = null
 let pendingLaunch = null
 
-async function openSelfInAboutBlank() {
+function openSelfInAboutBlank() {
 try {
-const response = await fetch(window.location.href, { cache: "no-store" })
-const html = await response.text()
-const page = window.open("about:blank")
+const page = window.open()
 if (!page) return
-page.document.open()
-page.document.write(html)
-page.document.close()
+const targetUrl = "https://skaberson.github.io/unblocker"
+page.document.body.innerHTML = `<iframe style="height:100%; width:100%; border:0; position:fixed; inset:0;" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation" src="${targetUrl}"></iframe>`
 } catch {
 }
 }
