@@ -1,1 +1,37 @@
-<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Unblocker</title>\n</head>\n<body>\n    <script>\n        class ABC {\n            getCode(mode) {\n                const options = {\n                    sandbox: 'allow-same-origin allow-scripts allow-fullscreen', // adds allow-fullscreen\n                    // other properties\n                };\n                // mode handling code here\n                return options;\n            }\n\n            open(mode) {\n                switch(mode) {\n                    case 'blank':\n                        // blank mode handling\n                        break;\n                    case 'blob':\n                        // blob mode handling\n                        break;\n                    case 'overwrite':\n                        // overwrite mode handling\n                        break;\n                }\n            }\n        }\n\n        // Update the preview-frame iframe to include allow-fullscreen\n        const previewFrame = document.getElementById('preview-frame');\n        if (previewFrame) {\n            previewFrame.sandbox += ' allow-fullscreen'; // adds allow-fullscreen\n        }\n    <\/script>\n    <iframe id="preview-frame" sandbox="allow-same-origin allow-scripts"></iframe>\n</body>\n</html>\n
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U4C Launcher</title>
+<style>
+/* Add your styles here */
+</style>
+<script>
+function ABC() {
+    this.getCode = function() {
+        return `<iframe sandbox='allow-same-origin allow-scripts allow-fullscreen' ...></iframe>`; // line 23 updated
+    };
+}
+
+function openInBlankTab() {
+    return `<iframe sandbox='allow-fullscreen' ...></iframe>`; // line 29 updated
+}
+
+function openInBlobTab() {
+    return `<iframe sandbox='allow-fullscreen' ...></iframe>`; // line 34 updated
+}
+
+function overwriteMode() {
+    return `<iframe sandbox='allow-fullscreen' ...></iframe>`; // line 40 updated
+}
+
+function showPreview() {
+    return `<iframe class='preview-frame' sandbox='allow-fullscreen' ...></iframe>`; // line 93 updated
+}
+</script>
+</head>
+<body>
+<!-- Body content here -->
+</body>
+</html>
