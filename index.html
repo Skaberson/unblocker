@@ -1,37 +1,1005 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>U4C Launcher</title>
-<style>
-/* Add your styles here */
-</style>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-function ABC() {
-    this.getCode = function() {
-        return `<iframe sandbox='allow-same-origin allow-scripts allow-fullscreen' ...></iframe>`; // line 23 updated
-    };
+class ABC {
+constructor(config = {}) {
+this.type = config.type || "blank"
+this.url = config.url || "about:blank"
 }
-
-function openInBlankTab() {
-    return `<iframe sandbox='allow-fullscreen' ...></iframe>`; // line 29 updated
+setType(type) {
+if (!type) return;
+this.type = type
 }
-
-function openInBlobTab() {
-    return `<iframe sandbox='allow-fullscreen' ...></iframe>`; // line 34 updated
+setUrl(url) {
+if (!url) return;
+this.url = url
 }
-
-function overwriteMode() {
-    return `<iframe sandbox='allow-fullscreen' ...></iframe>`; // line 40 updated
+getCode() {
+return `<iframe style="height:100%; width: 100%; border: none; position: fixed; top: 0; right: 0; left: 0; bottom: 0; border: none" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation" src="` + this.url + `"></iframe>`
 }
-
-function showPreview() {
-    return `<iframe class='preview-frame' sandbox='allow-fullscreen' ...></iframe>`; // line 93 updated
+open() {
+if (this.type == "blank") {
+try {
+var page = window.open()
+page.document.body.innerHTML = `<iframe style="height:100%; width: 100%; border: none; position: fixed; top: 0; right: 0; left: 0; bottom: 0; border: none" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation" src="` + this.url + `"></iframe>`
+} catch {
+}
+} else if (this.type == "blob") {
+try {
+var page = new Blob([`<iframe style="height:100%; width: 100%; border: none; position: fixed; top: 0; right: 0; left: 0; bottom: 0; border: none" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation" src="` + this.url + `"></iframe>`], {type: "text/html"})
+window.open(URL.createObjectURL(page))
+} catch {
+}
+} else if (this.type == "overwrite") {
+try {
+document.body.innerHTML = `<iframe style="height:100%; width: 100%; border: none; position: fixed; top: 0; right: 0; left: 0; bottom: 0; border: none" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation" src="` + this.url + `"></iframe>`
+} catch {
+}
+}
+}
 }
 </script>
 </head>
 <body>
-<!-- Body content here -->
+<div class="backdrop" aria-hidden="true"></div>
+<div class="orb orb-a" aria-hidden="true"></div>
+<div class="orb orb-b" aria-hidden="true"></div>
+<div class="orb orb-c" aria-hidden="true"></div>
+<main class="shell">
+<header class="hero">
+<div class="badge">U4C Launcher</div>
+<h1>U4C Launcher</h1>
+<p class="lede">Type a URL, choose a launch style, and go.</p>
+</header>
+
+<section class="panel">
+<label class="field">
+<span>Destination URL</span>
+<input id="url-input" type="url" inputmode="url" placeholder="https://example.com" value="https://example.com" autocomplete="off">
+</label>
+
+<label class="field">
+<span>Open mode</span>
+<select id="type-input">
+<option value="blank">Blank tab</option>
+<option value="blob">Blob tab</option>
+<option value="overwrite">Overwrite page</option>
+</select>
+</label>
+
+<button class="run" id="launch-btn" type="button">Launch</button>
+</section>
+
+<section class="sessions">
+<div class="recent-head">
+<h2>Running sessions</h2>
+<div class="recent-sub">Click a card to preview, then open in its mode.</div>
+</div>
+<div class="cards" id="session-list"></div>
+<div class="preview" id="session-preview">
+<div class="preview-meta">
+<div>
+<div class="preview-title" id="preview-title">Select a session</div>
+<div class="preview-sub" id="preview-sub">Preview will appear here.</div>
+</div>
+<button class="run" id="preview-open" type="button" disabled>Open</button>
+</div>
+<div class="preview-frame">
+<iframe id="preview-frame" title="Session preview" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts"></iframe>
+</div>
+</div>
+</section>
+
+<section class="recent">
+<div class="recent-head">
+<h2>Recent launches</h2>
+<div class="recent-sub">Saved locally in IndexedDB</div>
+</div>
+<div class="cards" id="recent-list"></div>
+</section>
+
+</main>
+
+<div class="modal" id="mode-modal" aria-hidden="true">
+<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mode-title">
+<div class="modal-header">
+<div class="modal-eyebrow">Mode guide</div>
+<h3 id="mode-title"></h3>
+</div>
+<p class="modal-desc" id="mode-desc"></p>
+<label class="modal-check">
+<input type="checkbox" id="mode-skip">
+<span>Don't show for this mode again</span>
+</label>
+<div class="modal-actions">
+<button class="ghost" id="mode-back" type="button">Back</button>
+<button class="run" id="mode-go" type="button">Go</button>
+</div>
+</div>
+</div>
+
+<div class="modal" id="cloak-modal" aria-hidden="true">
+<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cloak-title">
+<div class="modal-header">
+<div class="modal-eyebrow">Privacy cloak</div>
+<h3 id="cloak-title">Open in about:blank?</h3>
+</div>
+<p class="modal-desc">Launch the U4C Launcher inside an about:blank tab to reduce visibility in history and tabs.</p>
+<div class="modal-actions">
+<button class="ghost" id="cloak-dismiss" type="button">Not now</button>
+<button class="run" id="cloak-open" type="button">Open in about:blank</button>
+</div>
+</div>
+</div>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+--ink: #0f1419;
+--mist: #f5f1e9;
+--sand: #efe6d6;
+--teal: #1c7c7c;
+--tangerine: #f27b42;
+--slate: #2b3237;
+--shadow: rgba(15, 20, 25, 0.15);
+}
+
+* {
+box-sizing: border-box;
+}
+
+body {
+margin: 0;
+min-height: 110vh;
+font-family: "Space Grotesk", sans-serif;
+color: var(--ink);
+background: radial-gradient(1200px 900px at 15% -10%, #fff7e3, transparent 60%),
+radial-gradient(1000px 700px at 110% 0%, #d7efe6, transparent 55%),
+linear-gradient(135deg, var(--sand), var(--mist));
+}
+
+.backdrop {
+position: fixed;
+inset: 0;
+background-image: repeating-linear-gradient(120deg, rgba(15, 20, 25, 0.04), rgba(15, 20, 25, 0.04) 1px, transparent 1px, transparent 32px);
+pointer-events: none;
+transform: translate3d(var(--bg-x, 0px), calc(var(--bg-y, 0px) + var(--bg-auto-y, 0px)), 0);
+transition: transform 0.2s ease-out;
+will-change: transform;
+}
+
+.orb {
+position: fixed;
+width: 420px;
+height: 420px;
+border-radius: 50%;
+filter: blur(20px);
+opacity: 0.65;
+pointer-events: none;
+mix-blend-mode: multiply;
+transform: translate3d(var(--orb-x, 0px), calc(var(--orb-y, 0px) + var(--orb-auto-y, 0px)), 0);
+transition: transform 0.25s ease-out;
+will-change: transform;
+}
+
+.orb-a {
+top: -120px;
+left: -80px;
+background: radial-gradient(circle at 30% 30%, #f8d49a, rgba(248, 212, 154, 0.1));
+}
+
+.orb-b {
+top: 35%;
+right: -140px;
+background: radial-gradient(circle at 30% 30%, #8bd1c1, rgba(139, 209, 193, 0.05));
+}
+
+.orb-c {
+bottom: -180px;
+left: 40%;
+background: radial-gradient(circle at 30% 30%, #f2a36c, rgba(242, 163, 108, 0.06));
+}
+
+.shell {
+position: relative;
+max-width: 920px;
+margin: 0 auto;
+padding: 48px 24px 72px;
+display: grid;
+gap: 28px;
+animation: rise 600ms ease-out;
+}
+
+.hero {
+display: grid;
+gap: 12px;
+}
+
+.badge {
+display: inline-flex;
+align-items: center;
+gap: 8px;
+padding: 6px 14px;
+border-radius: 999px;
+background: var(--ink);
+color: var(--mist);
+font-weight: 600;
+letter-spacing: 0.08em;
+font-size: 12px;
+text-transform: uppercase;
+width: fit-content;
+}
+
+h1 {
+margin: 0;
+font-size: clamp(32px, 6vw, 56px);
+line-height: 1.05;
+}
+
+.lede {
+margin: 0;
+max-width: 540px;
+font-size: 18px;
+color: #3b4349;
+}
+
+.panel {
+display: grid;
+gap: 18px;
+grid-template-columns: minmax(0, 1fr) minmax(0, 210px) auto;
+align-items: end;
+background: rgba(255, 255, 255, 0.7);
+border-radius: 20px;
+padding: 22px;
+box-shadow: 0 18px 40px var(--shadow);
+backdrop-filter: blur(10px);
+}
+
+.field {
+display: grid;
+gap: 8px;
+font-weight: 600;
+}
+
+.field span {
+font-size: 13px;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+color: #5c6369;
+}
+
+input,
+select {
+font-family: "Space Grotesk", sans-serif;
+font-size: 16px;
+padding: 12px 14px;
+border-radius: 12px;
+border: 1px solid rgba(43, 50, 55, 0.2);
+background: #fff;
+color: var(--slate);
+outline: none;
+transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+input:focus,
+select:focus {
+border-color: var(--teal);
+box-shadow: 0 0 0 3px rgba(28, 124, 124, 0.2);
+}
+
+.run {
+font-family: "Space Grotesk", sans-serif;
+font-size: 18px;
+font-weight: 700;
+padding: 14px 22px;
+border-radius: 14px;
+border: none;
+background: linear-gradient(135deg, var(--tangerine), #f2a34d);
+color: #1b120c;
+cursor: pointer;
+box-shadow: 0 12px 24px rgba(242, 123, 66, 0.3);
+transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.run:hover {
+transform: translateY(-1px);
+box-shadow: 0 16px 28px rgba(242, 123, 66, 0.35);
+}
+
+.recent {
+display: grid;
+gap: 16px;
+}
+
+.sessions {
+display: grid;
+gap: 16px;
+}
+
+.recent-head h2 {
+margin: 0;
+font-size: 24px;
+}
+
+.recent-sub {
+font-size: 14px;
+color: #5c6369;
+}
+
+.cards {
+display: grid;
+gap: 14px;
+grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card {
+background: rgba(255, 255, 255, 0.85);
+border-radius: 16px;
+padding: 16px;
+box-shadow: 0 12px 24px rgba(15, 20, 25, 0.12);
+display: grid;
+gap: 10px;
+}
+
+.card.is-active {
+outline: 2px solid rgba(28, 124, 124, 0.35);
+}
+
+.card-head {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 16px;
+}
+
+.card-title {
+flex: 1;
+}
+
+.favicon {
+width: 48px;
+height: 48px;
+border-radius: 12px;
+background: rgba(15, 20, 25, 0.06);
+object-fit: cover;
+flex-shrink: 0;
+display: grid;
+place-items: center;
+}
+
+.card h3 {
+margin: 0;
+font-size: 16px;
+word-break: break-all;
+}
+
+.card-meta {
+display: grid;
+gap: 4px;
+font-size: 13px;
+color: #5c6369;
+}
+
+.card-actions {
+display: flex;
+gap: 8px;
+flex-wrap: wrap;
+}
+
+.card button {
+border-radius: 999px;
+border: 1px solid rgba(43, 50, 55, 0.2);
+padding: 6px 12px;
+font-size: 12px;
+font-weight: 600;
+cursor: pointer;
+background: #fff;
+}
+
+.card button.primary {
+background: var(--ink);
+color: var(--mist);
+border-color: var(--ink);
+}
+
+.card button.fav {
+border-color: var(--teal);
+color: var(--teal);
+}
+
+.card button.fav.is-on {
+background: var(--teal);
+color: var(--mist);
+}
+
+.preview {
+background: rgba(255, 255, 255, 0.85);
+border-radius: 18px;
+padding: 16px;
+box-shadow: 0 12px 24px rgba(15, 20, 25, 0.12);
+display: grid;
+gap: 12px;
+}
+
+.preview-meta {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 16px;
+}
+
+.preview-title {
+font-size: 16px;
+font-weight: 600;
+}
+
+.preview-sub {
+font-size: 13px;
+color: #5c6369;
+}
+
+.preview-frame {
+border-radius: 16px;
+overflow: hidden;
+border: 1px solid rgba(43, 50, 55, 0.15);
+background: #fff;
+aspect-ratio: 16 / 9;
+}
+
+.preview-frame iframe {
+width: 100%;
+height: 100%;
+border: 0;
+}
+
+.empty {
+padding: 18px;
+border-radius: 14px;
+border: 1px dashed rgba(43, 50, 55, 0.25);
+color: #5c6369;
+background: rgba(255, 255, 255, 0.6);
+}
+
+.modal {
+position: fixed;
+inset: 0;
+display: grid;
+place-items: center;
+padding: 24px;
+background: rgba(15, 20, 25, 0.45);
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.2s ease;
+z-index: 10;
+}
+
+.modal.is-open {
+opacity: 1;
+pointer-events: auto;
+}
+
+.modal-card {
+width: min(520px, 100%);
+background: #fff;
+border-radius: 20px;
+padding: 22px;
+box-shadow: 0 24px 50px rgba(15, 20, 25, 0.25);
+display: grid;
+gap: 14px;
+}
+
+.modal-header {
+display: grid;
+gap: 6px;
+}
+
+.modal-eyebrow {
+font-size: 12px;
+letter-spacing: 0.14em;
+text-transform: uppercase;
+color: #5c6369;
+}
+
+.modal-desc {
+margin: 0;
+color: #3b4349;
+}
+
+.modal-check {
+display: flex;
+gap: 10px;
+align-items: center;
+font-size: 14px;
+color: #3b4349;
+}
+
+.modal-check input {
+width: 18px;
+height: 18px;
+accent-color: var(--teal);
+}
+
+.modal-actions {
+display: flex;
+justify-content: flex-end;
+gap: 12px;
+flex-wrap: wrap;
+}
+
+.ghost {
+font-family: "Space Grotesk", sans-serif;
+font-size: 14px;
+font-weight: 600;
+padding: 10px 16px;
+border-radius: 999px;
+border: 1px solid rgba(43, 50, 55, 0.25);
+background: transparent;
+color: var(--slate);
+cursor: pointer;
+}
+
+@keyframes rise {
+from { opacity: 0; transform: translateY(12px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 860px) {
+.panel {
+grid-template-columns: 1fr;
+align-items: stretch;
+}
+
+.preview-meta {
+flex-direction: column;
+align-items: flex-start;
+}
+
+.run {
+width: 100%;
+}
+}
+</style>
+
+<script>
+const urlInput = document.getElementById("url-input")
+const typeInput = document.getElementById("type-input")
+const launchBtn = document.getElementById("launch-btn")
+const backdrop = document.querySelector(".backdrop")
+const orbA = document.querySelector(".orb-a")
+const orbB = document.querySelector(".orb-b")
+const orbC = document.querySelector(".orb-c")
+const recentList = document.getElementById("recent-list")
+const sessionList = document.getElementById("session-list")
+const previewFrame = document.getElementById("preview-frame")
+const previewTitle = document.getElementById("preview-title")
+const previewSub = document.getElementById("preview-sub")
+const previewOpen = document.getElementById("preview-open")
+const modeModal = document.getElementById("mode-modal")
+const modeTitle = document.getElementById("mode-title")
+const modeDesc = document.getElementById("mode-desc")
+const modeSkip = document.getElementById("mode-skip")
+const modeBack = document.getElementById("mode-back")
+const modeGo = document.getElementById("mode-go")
+const cloakModal = document.getElementById("cloak-modal")
+const cloakDismiss = document.getElementById("cloak-dismiss")
+const cloakOpen = document.getElementById("cloak-open")
+let mouseX = window.innerWidth / 2
+let mouseY = window.innerHeight / 2
+let scrollOffset = 0
+let dbPromise = null
+let sessions = []
+let activeSessionId = null
+let pendingLaunch = null
+
+function openSelfInAboutBlank() {
+try {
+const page = window.open()
+if (!page) return
+const targetUrl = "https://skaberson.github.io/unblocker"
+page.document.body.innerHTML = `<iframe style="height:100%; width:100%; border:0; position:fixed; inset:0;" sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation" src="${targetUrl}"></iframe>`
+} catch {
+}
+}
+
+function normalizeUrl(value) {
+const trimmed = value.trim()
+if (!trimmed) return "about:blank"
+if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+return trimmed
+}
+return "https://" + trimmed
+}
+
+launchBtn.addEventListener("click", async () => {
+const url = normalizeUrl(urlInput.value)
+addSession({ url, type: typeInput.value })
+await saveLaunch({ url, type: typeInput.value })
+refreshLaunches()
+})
+
+function handleParallax() {
+const { innerWidth: width, innerHeight: height } = window
+const x = ((mouseX / width) - 0.5) * 20
+const y = ((mouseY / height) - 0.5) * 20
+
+backdrop.style.setProperty("--bg-x", `${x * 0.6}px`)
+backdrop.style.setProperty("--bg-y", `${y * 0.6 + scrollOffset}px`)
+orbA.style.setProperty("--orb-x", `${x * 1.8}px`)
+orbA.style.setProperty("--orb-y", `${y * 1.6 + scrollOffset * 0.8}px`)
+orbB.style.setProperty("--orb-x", `${x * -2.2}px`)
+orbB.style.setProperty("--orb-y", `${y * 1.2 + scrollOffset * 1.1}px`)
+orbC.style.setProperty("--orb-x", `${x * 1.4}px`)
+orbC.style.setProperty("--orb-y", `${y * -1.6 + scrollOffset * 1.3}px`)
+}
+
+window.addEventListener("mousemove", (event) => {
+mouseX = event.clientX
+mouseY = event.clientY
+handleParallax()
+})
+
+window.addEventListener("scroll", () => {
+scrollOffset = window.scrollY * 0.12
+handleParallax()
+})
+
+function tick(timestamp) {
+const drift = (timestamp * 0.04) % 600
+const slowDrift = (timestamp * 0.02) % 480
+const fastDrift = (timestamp * 0.06) % 720
+backdrop.style.setProperty("--bg-auto-y", `${drift}px`)
+orbA.style.setProperty("--orb-auto-y", `${slowDrift * 0.6}px`)
+orbB.style.setProperty("--orb-auto-y", `${fastDrift * -0.4}px`)
+orbC.style.setProperty("--orb-auto-y", `${drift * 0.5}px`)
+requestAnimationFrame(tick)
+}
+
+handleParallax()
+requestAnimationFrame(tick)
+
+function openDb() {
+if (dbPromise) return dbPromise
+if (!("indexedDB" in window)) {
+recentList.innerHTML = '<div class="empty">IndexedDB is not available in this browser.</div>'
+return Promise.reject(new Error("IndexedDB unavailable"))
+}
+dbPromise = new Promise((resolve, reject) => {
+const request = indexedDB.open("abc-launcher", 2)
+request.onerror = () => reject(request.error)
+request.onupgradeneeded = () => {
+const db = request.result
+if (!db.objectStoreNames.contains("launches")) {
+const store = db.createObjectStore("launches", { keyPath: "id", autoIncrement: true })
+store.createIndex("ts", "ts")
+store.createIndex("favorite", "favorite")
+}
+if (!db.objectStoreNames.contains("settings")) {
+db.createObjectStore("settings", { keyPath: "key" })
+}
+}
+request.onsuccess = () => resolve(request.result)
+})
+return dbPromise
+}
+
+async function saveLaunch(entry) {
+const db = await openDb()
+const tx = db.transaction("launches", "readwrite")
+const store = tx.objectStore("launches")
+store.add({
+url: entry.url,
+type: entry.type,
+ts: Date.now(),
+favorite: false
+})
+return new Promise((resolve) => {
+tx.oncomplete = resolve
+tx.onerror = resolve
+})
+}
+
+async function getLaunches() {
+const db = await openDb()
+const tx = db.transaction("launches", "readonly")
+const store = tx.objectStore("launches")
+return new Promise((resolve) => {
+const request = store.getAll()
+request.onsuccess = () => resolve(request.result || [])
+request.onerror = () => resolve([])
+})
+}
+
+async function updateFavorite(id, favorite) {
+const db = await openDb()
+const tx = db.transaction("launches", "readwrite")
+const store = tx.objectStore("launches")
+return new Promise((resolve) => {
+const request = store.get(Number(id))
+request.onsuccess = () => {
+const record = request.result
+if (!record) {
+resolve()
+return
+}
+record.favorite = favorite
+store.put(record)
+resolve()
+}
+request.onerror = () => resolve()
+})
+}
+
+function formatDate(ts) {
+const date = new Date(ts)
+return date.toLocaleString()
+}
+
+const MODE_INFO = {
+blank: {
+title: "Blank tab",
+desc: "Opens a fresh tab with the destination loaded inside a full-page iframe."
+},
+blob: {
+title: "Blob tab",
+desc: "Opens a new tab from a Blob-backed page, then loads the destination in an iframe."
+},
+overwrite: {
+title: "Overwrite page",
+desc: "Replaces this page with the destination iframe in the current tab."
+}
+}
+
+async function getModePreference(mode) {
+try {
+const db = await openDb()
+const tx = db.transaction("settings", "readonly")
+const store = tx.objectStore("settings")
+return new Promise((resolve) => {
+const request = store.get(`mode:${mode}`)
+request.onsuccess = () => resolve(request.result ? request.result.value : null)
+request.onerror = () => resolve(null)
+})
+} catch {
+return null
+}
+}
+
+async function setModePreference(mode, value) {
+try {
+const db = await openDb()
+const tx = db.transaction("settings", "readwrite")
+const store = tx.objectStore("settings")
+store.put({ key: `mode:${mode}`, value })
+return new Promise((resolve) => {
+tx.oncomplete = resolve
+tx.onerror = resolve
+})
+} catch {
+return null
+}
+}
+
+function showModeModal(entry, onConfirm) {
+pendingLaunch = { entry, onConfirm }
+const info = MODE_INFO[entry.type] || { title: entry.type, desc: "Opens using the selected mode." }
+modeTitle.textContent = info.title
+modeDesc.textContent = info.desc
+modeSkip.checked = false
+modeModal.classList.add("is-open")
+modeModal.setAttribute("aria-hidden", "false")
+}
+
+function closeModeModal() {
+modeModal.classList.remove("is-open")
+modeModal.setAttribute("aria-hidden", "true")
+pendingLaunch = null
+}
+
+async function requestLaunch(entry, onConfirm) {
+const pref = await getModePreference(entry.type)
+if (pref && pref.skip) {
+onConfirm()
+return
+}
+showModeModal(entry, onConfirm)
+}
+
+function getFaviconUrl(url) {
+try {
+const parsed = new URL(url)
+const domain = parsed.hostname
+return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
+} catch {
+return ""
+}
+}
+
+function addSession(entry) {
+const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+const session = {
+id,
+url: entry.url,
+type: entry.type,
+ts: Date.now()
+}
+sessions = [session, ...sessions].slice(0, 8)
+renderSessions()
+setActiveSession(id)
+}
+
+function renderSessions() {
+if (!sessions.length) {
+sessionList.innerHTML = '<div class="empty">No running sessions yet.</div>'
+return
+}
+sessionList.innerHTML = sessions.map((item) => {
+const safeUrl = escapeHtml(item.url)
+const safeType = escapeHtml(item.type)
+const favicon = getFaviconUrl(item.url)
+const isActive = item.id === activeSessionId
+return `
+<article class="card${isActive ? " is-active" : ""}" data-session="${item.id}">
+<div class="card-head">
+<h3 class="card-title">${safeUrl}</h3>
+${favicon ? `<img class="favicon" src="${favicon}" alt="" loading="lazy" decoding="async">` : ""}
+</div>
+<div class="card-meta">
+<div>Mode: ${safeType}</div>
+<div>Added: ${formatDate(item.ts)}</div>
+</div>
+</article>
+`
+}).join("")
+}
+
+function setActiveSession(id) {
+const session = sessions.find((item) => item.id === id)
+if (!session) return
+activeSessionId = id
+previewTitle.textContent = session.url
+previewSub.textContent = `Mode: ${session.type}`
+previewFrame.src = session.url
+previewOpen.disabled = false
+renderSessions()
+}
+
+previewOpen.addEventListener("click", () => {
+const session = sessions.find((item) => item.id === activeSessionId)
+if (!session) return
+requestLaunch(session, () => {
+const page = new ABC({ type: session.type, url: session.url })
+page.open()
+})
+})
+
+sessionList.addEventListener("click", (event) => {
+const card = event.target.closest("[data-session]")
+if (!card) return
+setActiveSession(card.dataset.session)
+})
+
+function escapeHtml(value) {
+return String(value)
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;")
+}
+
+function renderLaunches(items) {
+if (!items.length) {
+recentList.innerHTML = '<div class="empty">No launches yet. Open a site to save it here.</div>'
+return
+}
+const sorted = items.slice().sort((a, b) => {
+if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
+return b.ts - a.ts
+})
+recentList.innerHTML = sorted.map((item) => {
+const favClass = item.favorite ? "fav is-on" : "fav"
+const favText = item.favorite ? "Unfavorite" : "Favorite"
+const safeUrl = escapeHtml(item.url)
+const safeType = escapeHtml(item.type)
+const favicon = getFaviconUrl(item.url)
+return `
+<article class="card">
+<div class="card-head">
+<h3 class="card-title">${safeUrl}</h3>
+${favicon ? `<img class="favicon" src="${favicon}" alt="" loading="lazy" decoding="async">` : ""}
+</div>
+<div class="card-meta">
+<div>Mode: ${safeType}</div>
+<div>Last: ${formatDate(item.ts)}</div>
+</div>
+<div class="card-actions">
+<button class="primary" data-action="launch" data-id="${item.id}">Launch</button>
+<button class="${favClass}" data-action="favorite" data-id="${item.id}" data-fav="${item.favorite}">${favText}</button>
+</div>
+</article>
+`
+}).join("")
+}
+
+async function refreshLaunches() {
+try {
+const items = await getLaunches()
+renderLaunches(items)
+} catch {
+}
+}
+
+recentList.addEventListener("click", async (event) => {
+const button = event.target.closest("button")
+if (!button) return
+const action = button.dataset.action
+const id = button.dataset.id
+if (!action || !id) return
+
+const items = await getLaunches()
+const match = items.find((item) => String(item.id) === String(id))
+if (!match) return
+
+if (action === "launch") {
+requestLaunch(match, async () => {
+const page = new ABC({ type: match.type, url: match.url })
+page.open()
+await saveLaunch({ url: match.url, type: match.type })
+refreshLaunches()
+})
+}
+
+if (action === "favorite") {
+const next = button.dataset.fav !== "true"
+await updateFavorite(id, next)
+refreshLaunches()
+}
+})
+
+refreshLaunches()
+
+modeBack.addEventListener("click", () => {
+closeModeModal()
+})
+
+modeGo.addEventListener("click", async () => {
+if (!pendingLaunch) return
+const { entry, onConfirm } = pendingLaunch
+if (modeSkip.checked) {
+await setModePreference(entry.type, { skip: true })
+}
+closeModeModal()
+onConfirm()
+})
+
+function openCloakModal() {
+if (window.location.href === "about:blank") return
+cloakModal.classList.add("is-open")
+cloakModal.setAttribute("aria-hidden", "false")
+}
+
+function closeCloakModal() {
+cloakModal.classList.remove("is-open")
+cloakModal.setAttribute("aria-hidden", "true")
+}
+
+cloakDismiss.addEventListener("click", () => {
+closeCloakModal()
+})
+
+cloakOpen.addEventListener("click", () => {
+closeCloakModal()
+openSelfInAboutBlank()
+})
+
+openCloakModal()
+</script>
+
 </body>
 </html>
